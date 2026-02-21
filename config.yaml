@@ -1,0 +1,371 @@
+season:
+  name: "D52 Juniors 54/80 Schedule"
+  start_date: "2026-03-07"
+  end_date: "2026-05-16"
+  game_length_minutes: 150
+  game_code_prefix: "AP"
+
+leagues:
+  ALP:
+    full_name: "Alpine/West Menlo"
+    teams: 2
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Tue
+        field: "Nealon"
+        time: "6pm"
+      - day: Thu
+        field: "Nealon"
+        time: "6pm"
+    weekend_fields:
+      - day: Sat
+        field: "Nealon"
+        time: "12pm"
+
+  BRS:
+    full_name: "Belmont/Redwood Shores"
+    teams: 2
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Wed
+        field: "Marlin"
+        time: "5pm"
+    weekend_fields:
+      - day: Sun
+        field: "Ralston"
+        time: "1pm"
+      - day: Sun
+        field: "Ralston"
+        time: "4pm"
+
+  FC:
+    full_name: "Foster City"
+    teams: 2
+
+    blackout_dates:
+      - "2026-03-28:2026-04-05"
+    weekday_fields:
+      - day: Tue
+        field: "Sea Cloud"
+        time: "5pm"
+      - day: Wed
+        field: "Sea Cloud"
+        time: "5pm"
+    weekend_fields:
+      - day: Sat
+        field: "Sea Cloud"
+        time: "10am"
+      - day: Sat
+        field: "Sea Cloud"
+        time: "1am"
+
+  HMB:
+    full_name: "Half Moon Bay"
+    teams: 2
+
+    blackout_dates:
+      - "2026-03-21" # virtual team game
+      - "2026-03-31" # virtual team game
+      - "2026-05-09" # virtual team game
+      - "2026-05-20" # virtual team game
+      - "2026-04-11:2026-04-19"
+    weekday_fields:
+      - day: Tue
+        field: "Smith"
+        time: "5pm"
+    weekend_fields:
+      - day: Sat
+        field: "Smith"
+        time: "10am"
+      - day: Sat
+        field: "Smith"
+        time: "1pm"
+
+  HIL:
+    full_name: "Hillsborough"
+    teams: 1
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields: []
+    weekend_fields:
+      - day: Sun
+        field: "Sea Cloud"
+        time: "9am"
+
+  MA:
+    full_name: "Menlo-Atherton"
+    teams: 1
+
+    blackout_dates:
+      - "2026-03-07:2026-03-08"
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Fri
+        field: "Nealon"
+        time: "5pm"
+    weekend_fields:
+      - day: Sat
+        field: "Burgess"
+        time: "11am"
+
+  PAC:
+    full_name: "Pacifica"
+    teams: 3
+
+    blackout_dates:
+      - "2026-03-15" # virtual team game
+      - "2026-04-04" # virtual team game
+      - "2026-04-22" # virtual team game
+      - "2026-05-07" # virtual team game
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Tue
+        field: "Terra Nova"
+        time: "7pm"
+      - day: Thu
+        field: "Terra Nova"
+        time: "7pm"
+    weekend_fields:
+      - day: Sun
+        field: "Terra Nova"
+        time: "10am"
+      - day: Sun
+        field: "Terra Nova"
+        time: "1pm"
+      - day: Sun
+        field: "Terra Nova"
+        time: "4pm"
+
+  PA:
+    full_name: "Palo Alto"
+    teams: 1
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Mon
+        field: "El Camino"
+        time: "6pm"
+      - day: Tue
+        field: "El Camino"
+        time: "6pm"
+    weekend_fields:
+      - day: Sat
+        field: "El Camino"
+        time: "2am"
+      - day: Sat
+        field: "El Camino"
+        time: "5pm"
+      - day: Sun
+        field: "El Camino"
+        time: "3pm"
+      - day: Sun
+        field: "El Camino"
+        time: "6pm"
+
+  RAV:
+    full_name: "Ravenswood"
+    teams: 1
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields: []
+    weekend_fields: []
+
+  RWC:
+    full_name: "Redwood City"
+    teams: 4
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Tue
+        field: "McGarvey"
+        time: "6pm"
+      - day: Wed
+        field: "McGarvey"
+        time: "6pm"
+      - day: Thu
+        field: "McGarvey"
+        time: "6pm"
+    weekend_fields:
+      - day: Sat
+        field: "McGarvey"
+        time: "10am"
+      - day: Sat
+        field: "McGarvey"
+        time: "1pm"
+      - day: Sat
+        field: "McGarvey"
+        time: "4pm"
+
+  SC:
+    full_name: "San Carlos"
+    teams: 1
+
+    blackout_dates:
+      - "2026-04-04:2026-04-12"
+    weekday_fields:
+      - day: Tue
+        field: "Burton"
+        time: "7pm"
+        exclude_dates:
+          - 2026-05-05
+      - day: Wed
+        field: "Burton"
+        time: "7pm"
+        exclude_dates:
+          - 2026-03-11
+          - 2026-03-18
+          - 2026-03-25
+          - 2026-04-29
+          - 2026-05-13
+          - 2026-05-20
+      - day: Thu
+        field: "Burton"
+        time: "7pm"
+        exclude_dates:
+          - 2026-05-07
+    weekend_fields:
+      - day: Sat
+        field: "Burton"
+        time: "2pm"
+      - day: Sat
+        field: "Burton"
+        time: "5pm"
+
+  SMA:
+    full_name: "San Mateo American"
+    teams: 2
+
+    blackout_dates:
+      - "2026-03-28:2026-04-05"
+    weekday_fields:
+      - day: Tue
+        field: "Los Prados"
+        time: "5pm"
+        exclude_dates:
+          - 2026-05-05
+      - day: Thu
+        field: "Harborview"
+        time: "5pm"
+      - day: Thu
+        field: "Los Prados"
+        time: "5pm"
+        exclude_dates:
+          - 2026-03-05
+          - 2026-03-26
+          - 2026-04-23
+          - 2026-04-30
+          - 2026-05-16
+    weekend_fields:
+      - day: Sat
+        field: "Los Prados"
+        time: "2pm"
+      - day: Sat
+        field: "Harborview"
+        time: "1pm"
+      - day: Sat
+        field: "Harborview"
+        time: "4pm"
+
+  SMN:
+    full_name: "San Mateo National"
+    teams: 1
+
+    blackout_dates:
+      - "2026-03-28:2026-04-05"
+    weekday_fields:
+      - day: Mon
+        field: "Harborview"
+        time: "5pm"
+      - day: Wed
+        field: "Harborview"
+        time: "5pm"
+    weekend_fields:
+      - day: Sat
+        field: "Harborview"
+        time: "9am"
+
+avoid_same_time_groups:
+  - [BRS1, BRS2]
+  - [FC1, FC2]
+
+team_overrides:
+  SMN1:
+    weekday_only: true
+    available_weekends: []
+  MA1:
+    no_play_days: [Mon, Thu]
+    gamechanger_name: "M-A Juniors 54/80 Spring 2026"
+  SMA1:
+    gamechanger_name: "SMLLA Juniors (Bittle)"
+  SMA2:
+    gamechanger_name: "SMLLA Juniors (Wells)"
+  ALP1:
+    gamechanger_name: "Service By Medallion"
+  ALP2:
+    gamechanger_name: "Allen Tax Law"
+  # PA2:
+  #   gamechanger_name: "S26 PALL Jrs State of Mind"
+
+
+pools:
+  north:
+    - PAC1
+    - PAC2
+    - PAC3
+    - HIL1
+    - SMA1
+    - SMA2
+    - SMN1
+    - FC1
+    - FC2
+    - HMB1
+    - HMB2
+    - BRS1
+  south:
+    - ALP1
+    - ALP2
+    - BRS2
+    - MA1
+    - PA1
+    - RAV1
+    - RWC1
+    - RWC2
+    - RWC3
+    - RWC4
+    - SC1
+    - SC2
+
+fields:
+  "Nealon":
+    map_url: "https://maps.app.goo.gl/EniopDVk2y2LaMmj8"
+  "Marlin":
+    map_url: "https://goo.gl/maps/t52oKdyvMmH2"
+  "Ralston":
+    map_url: "https://goo.gl/maps/hL7dTSs5spJ2"
+  "Smith":
+    map_url: "https://goo.gl/maps/GtShivVmb8Q2"
+  "Sea Cloud":
+    map_url: "https://goo.gl/maps/Q1W5Jgtr2j82"
+  "Burgess":
+    map_url: "https://goo.gl/maps/ARCYzaHeSKJ2"
+  "Terra Nova":
+    map_url: "https://maps.app.goo.gl/VrsxFUBub4Kjyt1B8"
+  "El Camino":
+    map_url: "https://goo.gl/maps/jBdnW4Q1AiA2"
+  "McGarvey":
+    map_url: "https://goo.gl/maps/sq1gLzNkjM72"
+  "Burton":
+    map_url: "http://goo.gl/maps/yjrY7CPhHzD2"
+  "Los Prados":
+    map_url: "https://goo.gl/maps/Ht4cG7RY62w"
+  "Harborview":
+    map_url: "https://maps.app.goo.gl/zkV6su9PCKnRWx1Q6"
+

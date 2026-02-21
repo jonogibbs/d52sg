@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "d52sg"
+version = "0.1.0"
+description = "D52 Juniors 54/80 schedule generator"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+d52sg = "d52sg.schedule:main"
+d52sg-verify = "d52sg.verify:main"
+d52sg-config-report = "d52sg.config_report:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/d52sg"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+]

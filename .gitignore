@@ -1,9 +1,13 @@
-# Dependencies
-.psci_modules
-.spago
-bower_components
-node_modules
+output/
+test_output/
 
-# Generated files
-.psci
-output
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+.venv/
+venv/
+
+.pytest_cache/
