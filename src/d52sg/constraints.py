@@ -35,20 +35,37 @@ def validate_schedule(games: list[Game], teams: dict, leagues: dict,
     north = set(pools["north"])
     south = set(pools["south"])
 
+    # Separate scheduled vs unscheduled games
+    scheduled_games = [g for g in games if not g.unscheduled]
+    unscheduled_games = [g for g in games if g.unscheduled]
+
+    for g in unscheduled_games:
+        slot_label = ""
+        if g.slot_type:
+            slot_label = " WD" if g.slot_type == "weekday" else " WE"
+        errors.append(
+            f"UNSCHEDULED: {g.home_team} vs {g.away_team} "
+            f"(week {g.week_number}{slot_label})"
+        )
+
     # Track per-team stats
     home_counts = defaultdict(int)
     away_counts = defaultdict(int)
     games_per_slot = defaultdict(lambda: defaultdict(int))  # team -> slot_block_key -> count
     matchup_counts = defaultdict(lambda: defaultdict(int))
 
-
-    # Track same-league same-time conflicts
-    # (kept for potential future use)
-
     # Track per-team (date, field) for avoid-same-day-different-field checks
     team_date_field: dict[str, list[tuple]] = defaultdict(list)
 
-    for game in games:
+    # Build set of valid fields per league for Rule 1 checking
+    league_fields: dict[str, set[str]] = {}
+    for lcode, league in leagues.items():
+        fields = set()
+        for fs in league.weekday_fields + league.weekend_fields:
+            fields.add(fs.field_name)
+        league_fields[lcode] = fields
+
+    for game in scheduled_games:
         h = game.home_team
         a = game.away_team
 
@@ -119,6 +136,15 @@ def validate_schedule(games: list[Game], teams: dict, leagues: dict,
                     f"Crossover game {h} vs {a} has teams from same pool"
                 )
 
+        # Rule 1: field must belong to home or away team's league
+        if game.field_name:
+            h_fields = league_fields.get(teams[h].league_code, set())
+            a_fields = league_fields.get(teams[a].league_code, set())
+            if game.field_name not in h_fields and game.field_name not in a_fields:
+                errors.append(
+                    f"Game {h} vs {a} on {game.date} uses field "
+                    f"{game.field_name} which belongs to neither team's league"
+                )
 
         # Track per-team (date, field) for avoid-same-day checks
         team_date_field[h].append((game.date, game.field_name))
@@ -168,35 +194,94 @@ def validate_schedule(games: list[Game], teams: dict, leagues: dict,
                                 f"(avoid_same_time group)"
                             )
 
-    # Check: game count balance (weekday and weekend separately)
-    # Categorize by actual day of week, not game_type (ad-hoc same-pool
-    # games on weekends have game_type="intra" but are weekend games).
-    wd_counts: dict[str, int] = defaultdict(int)
-    we_counts: dict[str, int] = defaultdict(int)
-    for game in games:
-        if game.date.weekday() < 5:
-            wd_counts[game.home_team] += 1
-            wd_counts[game.away_team] += 1
-        else:
-            we_counts[game.home_team] += 1
-            we_counts[game.away_team] += 1
+    # Rule 3: max 1 team with a BYE per slot
+    # BYE = team was available but not assigned a game. Blackout != bye.
+    # Teams with unscheduled games in a slot are NOT on bye — they were
+    # assigned a game that couldn't be placed on a field.
+    # Group scheduled games by (week_number, weekday|weekend) slot
+    slot_teams: dict[tuple[int, str], set[str]] = defaultdict(set)
+    slot_dates: dict[tuple[int, str], list[date]] = defaultdict(list)
+    for game in scheduled_games:
+        block = "weekend" if game.date.weekday() >= 5 else "weekday"
+        skey = (game.week_number, block)
+        slot_teams[skey].add(game.home_team)
+        slot_teams[skey].add(game.away_team)
+        slot_dates[skey].append(game.date)
 
-    regular_teams = [t for t in teams if not teams[t].weekday_only]
-    all_team_codes = list(teams.keys())
+    # Track which teams have unscheduled games per slot
+    unsched_slot_teams: dict[tuple[int, str], set[str]] = defaultdict(set)
+    for game in unscheduled_games:
+        block = game.slot_type if game.slot_type else "weekend"
+        skey = (game.week_number, block)
+        unsched_slot_teams[skey].add(game.home_team)
+        unsched_slot_teams[skey].add(game.away_team)
+        # Ensure the slot exists in slot_teams/slot_dates even if it
+        # has no scheduled games (so Rule 4 iterates over it)
+        if skey not in slot_teams:
+            slot_teams[skey] = set()
 
-    if all_team_codes:
-        wd_vals = [wd_counts.get(t, 0) for t in all_team_codes]
-        if max(wd_vals) - min(wd_vals) > 1:
-            warnings.append(
-                f"Weekday game count spread: "
-                f"{min(wd_vals)}-{max(wd_vals)} (overflow rounds)"
-            )
-    if regular_teams:
-        we_vals = [we_counts.get(t, 0) for t in regular_teams]
-        if max(we_vals) - min(we_vals) > 1:
+    for skey, playing in slot_teams.items():
+        week, block = skey
+        dates = slot_dates.get(skey, [])
+        if not dates:
+            continue
+        # Determine which teams were available in this slot
+        available = set()
+        for t in teams:
+            team_obj = teams[t]
+            league = leagues[team_obj.league_code]
+            # Skip weekday-only teams for weekend slots
+            if block == "weekend" and team_obj.weekday_only:
+                if not any(d in team_obj.available_weekends for d in dates):
+                    continue
+            # Skip blacked-out teams
+            if all(league.is_blacked_out(d) for d in dates):
+                continue
+            available.add(t)
+        # Exclude teams with unscheduled games — they're not on bye
+        bye_teams = available - playing - unsched_slot_teams.get(skey, set())
+        if len(bye_teams) > 1:
             errors.append(
-                f"Weekend game count spread too wide: "
-                f"{min(we_vals)}-{max(we_vals)} (max spread 1)"
+                f"Week {week} {block}: {len(bye_teams)} teams have byes "
+                f"({', '.join(sorted(bye_teams))}), max is 1"
+            )
+
+    # Rule 4: bye spread <= 1 (only non-blackout byes count)
+    # A bye = team was available in a slot but had no game (scheduled or unscheduled)
+    team_bye_counts: dict[str, int] = defaultdict(int)
+    for skey in slot_teams:
+        week, block = skey
+        dates = slot_dates.get(skey, [])
+        if not dates:
+            continue
+        playing = slot_teams[skey]
+        unsched_in_slot = unsched_slot_teams.get(skey, set())
+        for t in teams:
+            if t in playing or t in unsched_in_slot:
+                continue
+            team_obj = teams[t]
+            league = leagues[team_obj.league_code]
+            if block == "weekend" and team_obj.weekday_only:
+                if not any(d in team_obj.available_weekends for d in dates):
+                    continue
+            if all(league.is_blacked_out(d) for d in dates):
+                continue
+            # This team was available but didn't play — it's a bye
+            team_bye_counts[t] += 1
+
+    if team_bye_counts:
+        min_byes = min(team_bye_counts.get(t, 0) for t in teams)
+        max_byes = max(team_bye_counts.get(t, 0) for t in teams)
+        if max_byes - min_byes > 1:
+            over_teams = [
+                f"{t}({team_bye_counts.get(t, 0)})"
+                for t in sorted(teams)
+                if team_bye_counts.get(t, 0) > min_byes + 1
+            ]
+            errors.append(
+                f"Bye spread {max_byes - min_byes} exceeds limit of 1: "
+                f"min={min_byes}, max={max_byes}. "
+                f"Over limit: {', '.join(over_teams)}"
             )
 
     # Check: matchup coverage — flag any pair that played 2+ times

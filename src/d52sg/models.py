@@ -113,6 +113,9 @@ class Game:
     round_number: int
     game_type: str = "intra"  # "intra" or "crossover"
     week_number: int = 0
+    slot_type: str = ""  # "weekday" or "weekend" (set for unscheduled games)
+    unscheduled: bool = False
+    game_source: str = ""  # "round", "deferred", "safe_adhoc", "adhoc"
 
 
 @dataclass

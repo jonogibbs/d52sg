@@ -143,7 +143,17 @@ def load_config(path: str | Path) -> dict:
         for code in pools[pool_name]:
             ovr = overrides.get(code, {})
             no_play = [DayOfWeek.from_str(d) for d in ovr.get("no_play_days", [])]
-            avail_we = [parse_date(str(d)) for d in ovr.get("available_weekends", [])]
+            avail_we = []
+            for d in ovr.get("available_weekends", []):
+                s = str(d)
+                if ":" in s:
+                    start, end = parse_date_range(s)
+                    cur = start
+                    while cur <= end:
+                        avail_we.append(cur)
+                        cur += timedelta(days=1)
+                else:
+                    avail_we.append(parse_date(s))
 
             teams[code] = Team(
                 code=code,

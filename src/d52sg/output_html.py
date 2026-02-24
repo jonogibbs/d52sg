@@ -35,15 +35,25 @@ INTRA_EMOJI = "\U0001F6B6\u200D\u2642\uFE0F"  # walking man
 
 
 def _round_label(game: Game, pools: dict) -> str:
-    """Round label with pool prefix: N1, S4, X10, or 'AH' for ad-hoc."""
-    if game.round_number == 0:
+    """Round label with pool prefix and source indicator.
+
+    - Regular round game: n1, s4, x10
+    - Deferred (blackout recovery): n1, s4, x10 (same label, different slot)
+    - Safe ad-hoc (from overflow round): n1*, s4*, x10*
+    - Truly ad-hoc (invented pairing): AH
+    """
+    source = game.game_source
+    if source == "adhoc" or (game.round_number == 0 and not source):
         return "AH"
     if game.game_type == "crossover":
-        return f"X{game.round_number}"
-    # Intra-pool: determine N or S from the home team's pool
-    north = set(pools.get("north", []))
-    prefix = "N" if game.home_team in north else "S"
-    return f"{prefix}{game.round_number}"
+        label = f"x{game.round_number}"
+    else:
+        north = set(pools.get("north", []))
+        prefix = "n" if game.home_team in north else "s"
+        label = f"{prefix}{game.round_number}"
+    if source == "safe_adhoc":
+        label += "*"
+    return label
 
 
 def _fmt_field(field_name: str, field_info: dict) -> str:
@@ -139,8 +149,11 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
     pools = pools or {}
     title = season_name or "D52 Juniors 54/80 Schedule"
 
+    scheduled = [g for g in games if not g.unscheduled]
+    unscheduled = [g for g in games if g.unscheduled]
+
     # Assign sequential game codes (G1, G2, ...) sorted by date/time
-    sorted_games = sorted(games, key=lambda g: (g.date, g.start_time,
+    sorted_games = sorted(scheduled, key=lambda g: (g.date, g.start_time,
                                                  g.home_team))
     game_codes: dict[int, str] = {}  # id(game) -> code string
     for i, g in enumerate(sorted_games, 1):
@@ -157,12 +170,15 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
 
     parts.append(f"<h1>{escape(title)}</h1>")
 
-    if games:
-        first = min(g.date for g in games)
-        last = max(g.date for g in games)
+    if scheduled:
+        first = min(g.date for g in scheduled)
+        last = max(g.date for g in scheduled)
+        count_str = f'{len(scheduled)} games'
+        if unscheduled:
+            count_str += f' + {len(unscheduled)} unscheduled'
         parts.append(f'<p class="subtitle">{first.strftime("%B %-d")} &ndash; '
                      f'{last.strftime("%B %-d, %Y")} &middot; '
-                     f'{len(games)} games</p>')
+                     f'{count_str}</p>')
 
     parts.append(f'<p class="legend">'
                  f'{CROSS_EMOJI} = crossover (north vs south) &nbsp; '
@@ -199,6 +215,11 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
             parts.append(f'<p><a href="#league-{league_code}">'
                          f'{escape(league.full_name)}</a></p>')
 
+    if unscheduled:
+        parts.append(f'<p style="margin-top:8px">'
+                     f'<a href="#unscheduled" style="color:#c00">'
+                     f'Unscheduled Games ({len(unscheduled)})</a></p>')
+
     if validation_result or stats:
         parts.append(f'<p style="margin-top:8px">'
                      f'<a href="#stats">Schedule Statistics</a></p>')
@@ -212,9 +233,19 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
     all_team_codes = sorted(teams.keys())
     by_slot: dict[tuple[int, str], list[Game]] = defaultdict(list)
     week_numbers = set()
-    for g in games:
+    for g in scheduled:
         slot_type = "weekend" if g.date.weekday() >= 5 else "weekday"
         by_slot[(g.week_number, slot_type)].append(g)
+        week_numbers.add(g.week_number)
+
+    # Index unscheduled games by (week_number, slot_type)
+    unsched_by_slot: dict[tuple[int, str], list[Game]] = defaultdict(list)
+    unsched_teams_by_slot: dict[tuple[int, str], set[str]] = defaultdict(set)
+    for g in unscheduled:
+        st = g.slot_type if g.slot_type else "weekend"
+        unsched_by_slot[(g.week_number, st)].append(g)
+        unsched_teams_by_slot[(g.week_number, st)].add(g.home_team)
+        unsched_teams_by_slot[(g.week_number, st)].add(g.away_team)
         week_numbers.add(g.week_number)
 
     for week_num in sorted(week_numbers):
@@ -274,12 +305,31 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
                     f"</tr>"
                 )
 
+            # Unscheduled games in this slot (shown in red)
+            slot_unsched = unsched_by_slot.get(key, [])
+            for g in slot_unsched:
+                gtype_emoji = CROSS_EMOJI if g.game_type == "crossover" else INTRA_EMOJI
+                parts.append(
+                    f'<tr style="background:#f8d7da">'
+                    f"<td></td>"
+                    f'<td class="game-type">{gtype_emoji}</td>'
+                    f"<td>UNSCHED</td>"
+                    f'<td class="home">{escape(g.home_team)}</td>'
+                    f"<td>vs</td>"
+                    f"<td>{escape(g.away_team)}</td>"
+                    f'<td colspan="2"></td>'
+                    f"</tr>"
+                )
+
             # BYE / Blackout rows: teams not playing in this slot
             playing = set()
             for g in slot_games:
                 playing.add(g.home_team)
                 playing.add(g.away_team)
-            not_playing = sorted(t for t in all_team_codes if t not in playing)
+            # Teams with unscheduled games are NOT on bye
+            unsched_here = unsched_teams_by_slot.get(key, set())
+            not_playing = sorted(t for t in all_team_codes
+                                 if t not in playing and t not in unsched_here)
             blackout_teams = []
             weekday_only_teams = []
             bye_teams = []
@@ -306,19 +356,51 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
 
             parts.append("</table>")
 
+    # --- Unscheduled games ---
+    if unscheduled:
+        parts.append(f'<h2 id="unscheduled" style="color:#c00">'
+                     f'Unscheduled Games ({len(unscheduled)})</h2>')
+        parts.append('<p>These games could not be assigned a field/time.</p>')
+        parts.append("<table>")
+        parts.append("<tr><th></th><th>Home</th><th></th>"
+                     "<th>Visitor</th><th>Week</th></tr>")
+        for g in unscheduled:
+            gtype_emoji = CROSS_EMOJI if g.game_type == "crossover" else INTRA_EMOJI
+            parts.append(
+                f'<tr style="background:#f8d7da">'
+                f'<td class="game-type">{gtype_emoji}</td>'
+                f'<td class="home">{escape(g.home_team)}</td>'
+                f"<td>vs</td>"
+                f"<td>{escape(g.away_team)}</td>"
+                f"<td>W{g.week_number} {'WD' if g.slot_type == 'weekday' else 'WE'}</td>"
+                f"</tr>"
+            )
+        parts.append("</table>")
+
     # --- Per-league schedules ---
     by_team: dict[str, list[Game]] = defaultdict(list)
-    for g in games:
+    for g in scheduled:
         by_team[g.home_team].append(g)
         by_team[g.away_team].append(g)
 
+    # Track unscheduled per team
+    unsched_by_team: dict[str, list[Game]] = defaultdict(list)
+    for g in unscheduled:
+        unsched_by_team[g.home_team].append(g)
+        unsched_by_team[g.away_team].append(g)
+
     # Build set of (week_number, slot_type) that exist in the schedule
-    all_slots = sorted({(g.week_number,
-                         "weekend" if g.date.weekday() >= 5 else "weekday")
-                        for g in games})
+    all_slots_set = {(g.week_number,
+                      "weekend" if g.date.weekday() >= 5 else "weekday")
+                     for g in scheduled}
+    # Include slots that only have unscheduled games
+    for g in unscheduled:
+        st = g.slot_type if g.slot_type else "weekend"
+        all_slots_set.add((g.week_number, st))
+    all_slots = sorted(all_slots_set)
     # Date range per slot for display
     slot_dates: dict[tuple[int, str], list[date]] = defaultdict(list)
-    for g in games:
+    for g in scheduled:
         st = "weekend" if g.date.weekday() >= 5 else "weekday"
         slot_dates[(g.week_number, st)].append(g.date)
 
@@ -359,6 +441,12 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
                 st = "weekend" if g.date.weekday() >= 5 else "weekday"
                 team_slot_games[(g.week_number, st)] = g
 
+            # Index unscheduled games by (week, slot_type) for this team
+            team_unsched_slot: dict[tuple[int, str], list[Game]] = defaultdict(list)
+            for g in unsched_by_team.get(team_code, []):
+                st = g.slot_type if g.slot_type else "weekend"
+                team_unsched_slot[(g.week_number, st)].append(g)
+
             game_num = 0
             for wk, st in all_slots:
                 slot_label = "WD" if st == "weekday" else "WE"
@@ -392,6 +480,22 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
                         f"<td{rnd_style}>{rnd_label}</td>"
                         f"</tr>"
                     )
+                elif (wk, st) in team_unsched_slot:
+                    # Unscheduled game in this slot — show in red
+                    for ug in team_unsched_slot[(wk, st)]:
+                        opponent = (ug.away_team if ug.home_team == team_code
+                                    else ug.home_team)
+                        gtype_emoji = (CROSS_EMOJI if ug.game_type == "crossover"
+                                       else INTRA_EMOJI)
+                        parts.append(
+                            f'<tr style="background:#f8d7da">'
+                            f'<td></td><td></td>'
+                            f'<td>W{wk} {slot_label}</td>'
+                            f'<td colspan="2">UNSCHED</td>'
+                            f'<td></td><td>{gtype_emoji}</td>'
+                            f'<td>{escape(opponent)}</td>'
+                            f'<td colspan="2"></td></tr>'
+                        )
                 else:
                     # No game — check if blacked out or weekday-only
                     dates_in_slot = slot_dates.get((wk, st), [])
@@ -425,13 +529,17 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
         parts.append('<h2 id="stats">Schedule Statistics</h2>')
 
         # Home/Away Balance table
-        parts.append("<h3>Home / Visitor Balance</h3>")
+        def _hz(v):
+            """Format int for HTML, suppressing zeros to empty string."""
+            return str(v) if v else ""
+
+        parts.append("<h3>Season Balance</h3>")
         parts.append('<table class="stat-table">')
         parts.append("<tr><th>Team</th><th>Home</th><th>Visitor</th>"
                      "<th>Host</th><th>H-Away</th><th>Total</th><th>Diff</th>"
                      "<th>WD-H</th><th>WD-V</th>"
                      "<th>WE-H</th><th>WE-V</th>"
-                     "<th>BO</th><th>BYE</th></tr>")
+                     "<th>BO</th><th>BYE</th><th>UNS</th></tr>")
         for t in all_teams:
             h = stats["home_counts"].get(t, 0)
             a = stats["away_counts"].get(t, 0)
@@ -445,16 +553,17 @@ def format_schedule_html(games: list[Game], teams: dict, leagues: dict,
             wea = stats["weekend_away"].get(t, 0)
             bo = stats.get("blackout_counts", {}).get(t, 0)
             bye = stats.get("bye_counts", {}).get(t, 0)
+            uns = stats.get("unsched_per_team", {}).get(t, 0)
             flag_cls = ' class="flag"' if abs(diff) > 1 else ""
-            diff_str = f"+{diff}" if diff > 0 else str(diff)
-            hnh_str = str(hnh) if hnh else ""
+            diff_str = f"+{diff}" if diff > 0 else str(diff) if diff else ""
             parts.append(
                 f"<tr><td><strong>{escape(t)}</strong></td>"
-                f"<td>{h}</td><td>{a}</td><td>{hosted}</td><td>{hnh_str}</td><td>{tot}</td>"
+                f"<td>{_hz(h)}</td><td>{_hz(a)}</td><td>{_hz(hosted)}</td>"
+                f"<td>{_hz(hnh)}</td><td>{_hz(tot)}</td>"
                 f"<td{flag_cls}>{diff_str}</td>"
-                f"<td>{wdh}</td><td>{wda}</td>"
-                f"<td>{weh}</td><td>{wea}</td>"
-                f"<td>{bo}</td><td>{bye}</td></tr>"
+                f"<td>{_hz(wdh)}</td><td>{_hz(wda)}</td>"
+                f"<td>{_hz(weh)}</td><td>{_hz(wea)}</td>"
+                f"<td>{_hz(bo)}</td><td>{_hz(bye)}</td><td>{_hz(uns)}</td></tr>"
             )
         parts.append("</table>")
 

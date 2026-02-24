@@ -16,6 +16,8 @@ dependencies = [
 [project.scripts]
 d52sg = "d52sg.schedule:main"
 d52sg-verify = "d52sg.verify:main"
+d52sg-convert = "d52sg.convert:main"
+d52sg-scan = "d52sg.scan:main"
 d52sg-config-report = "d52sg.config_report:main"
 
 [tool.hatch.build.targets.wheel]

@@ -1,4 +1,4 @@
-"""Round-robin schedule generation with shuffle for D52 scheduling app."""
+"""Round-robin schedule generation with shuffle for D52 scheduling app. """
 
 import random
 from d52sg.models import Matchup, Round

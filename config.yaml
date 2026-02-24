@@ -1,7 +1,7 @@
 season:
-  name: "D52 Juniors 54/80 Schedule"
+  name: "D52 Juniors 54/80 Schedule -- DRAFT #2 -- 2/23"
   start_date: "2026-03-07"
-  end_date: "2026-05-16"
+  end_date: "2026-04-12"
   game_length_minutes: 150
   game_code_prefix: "AP"
 
@@ -77,6 +77,9 @@ leagues:
       - day: Tue
         field: "Smith"
         time: "5pm"
+      #- day: Thu
+      #  field: "Smith"
+      #  time: "5pm"
     weekend_fields:
       - day: Sat
         field: "Smith"
@@ -84,6 +87,12 @@ leagues:
       - day: Sat
         field: "Smith"
         time: "1pm"
+      #- day: Sun
+      #  field: "Smith"
+      #  time: "1pm"
+      #- day: Sun
+      #  field: "Smith"
+      #  time: "1pm"
 
   HIL:
     full_name: "Hillsborough"
@@ -143,7 +152,7 @@ leagues:
 
   PA:
     full_name: "Palo Alto"
-    teams: 1
+    teams: ["PA3"]
 
     blackout_dates:
       - "2026-04-04:2026-04-12"
@@ -158,9 +167,13 @@ leagues:
       - day: Sat
         field: "El Camino"
         time: "2am"
+        exclude_dates:
+          - 2026-03-07
       - day: Sat
         field: "El Camino"
         time: "5pm"
+        exclude_dates:
+          - 2026-03-07
       - day: Sun
         field: "El Camino"
         time: "3pm"
@@ -206,7 +219,7 @@ leagues:
 
   SC:
     full_name: "San Carlos"
-    teams: 1
+    teams: ["SC2"]
 
     blackout_dates:
       - "2026-04-04:2026-04-12"
@@ -280,6 +293,19 @@ leagues:
 
     blackout_dates:
       - "2026-03-28:2026-04-05"
+      - "2026-03-07:2026-03-08"
+      #- "2026-03-14:2026-03-15"
+      - "2026-03-21:2026-03-22"
+      # "2026-03-28:2026-03-29"
+      #- "2026-04-04:2026-04-05"
+      - "2026-04-11:2026-04-12"
+      - "2026-04-18:2026-04-19"
+      - "2026-04-25:2026-04-26"
+      #- "2026-05-02:2026-05-03"
+      #- "2026-05-09:2026-05-10"
+      - "2026-05-16:2026-05-17"
+      #- "2026-05-23:2026-05-24"
+      - "2026-05-30:2026-05-31"
     weekday_fields:
       - day: Mon
         field: "Harborview"
@@ -294,12 +320,19 @@ leagues:
 
 avoid_same_time_groups:
   - [BRS1, BRS2]
+  - [SMA1, SMA2]
   - [FC1, FC2]
 
 team_overrides:
-  SMN1:
-    weekday_only: true
-    available_weekends: []
+  # SMN1:
+  #   weekday_only: true
+  #   available_weekends:
+  #     - "2026-03-14:2026-03-15"
+  #     - "2026-03-28:2026-03-29"
+  #     - "2026-04-04:2026-04-05"
+  #     - "2026-05-02:2026-05-03"
+  #     - "2026-05-09:2026-05-10"
+  #     - "2026-05-23:2026-05-24"
   MA1:
     no_play_days: [Mon, Thu]
     gamechanger_name: "M-A Juniors 54/80 Spring 2026"
@@ -316,31 +349,30 @@ team_overrides:
 
 
 pools:
-  north:
-    - PAC1
-    - PAC2
-    - PAC3
-    - HIL1
-    - SMA1
-    - SMA2
-    - SMN1
+  north: # 12 teams, 11 for some weekends
+    - BRS1
     - FC1
     - FC2
     - HMB1
     - HMB2
-    - BRS1
-  south:
+    - HIL1
+    - PAC1
+    - PAC2
+    - PAC3
+    - SMA1
+    - SMA2
+    - SMN1
+  south: # 11 teams
     - ALP1
     - ALP2
     - BRS2
     - MA1
-    - PA1
+    - PA3
     - RAV1
     - RWC1
     - RWC2
     - RWC3
     - RWC4
-    - SC1
     - SC2
 
 fields:
